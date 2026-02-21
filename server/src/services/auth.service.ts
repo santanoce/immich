@@ -96,7 +96,7 @@ export class AuthService extends BaseService {
   async backchannelLogout(dto: OAuthBackchannelLogoutDto): Promise<void> {
     const { oauth } = await this.getConfig({ withCache: false });
     if (!oauth.enabled) {
-      throw new Error('Received backchannel logout request but OAuth is disabled');
+      throw new BadRequestException('Received backchannel logout request but OAuth is not enabled');
     }
 
     let claims;
@@ -113,19 +113,11 @@ export class AuthService extends BaseService {
       throw new BadRequestException('Invalid logout token: no claims found');
     }
 
-    if (claims.sub && !claims.sid) {
-      const user = await this.userRepository.getByOAuthId(claims.sub);
-      if (!user) {
-        throw new BadRequestException('User not found');
-      }
-      await this.sessionRepository.invalidateAll({ userId: user.id });
-    } else if (!claims.sub && claims.sid) {
-      await this.sessionRepository.invalidateOAuth({ oauthSid: claims.sid });
-    } else if (claims.sub && claims.sid) {
-      await this.sessionRepository.invalidateOAuth({ oauthSid: claims.sid, oauthId: claims.sub });
-    } else {
+    if (!claims.sub && !claims.sid) {
       throw new BadRequestException('Invalid logout token: it must contain either a sub or a sid claim');
     }
+
+    await this.sessionRepository.invalidateOAuth({ oauthSid: claims.sid, oauthId: claims.sub });
   }
 
   async changePassword(auth: AuthDto, dto: ChangePasswordDto): Promise<UserAdminResponseDto> {

@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   ForeignKeyColumn,
   Generated,
-  Index,
   PrimaryGeneratedColumn,
   Table,
   Timestamp,
@@ -14,7 +13,6 @@ import {
 
 @Table({ name: 'session' })
 @UpdatedAtTrigger('session_updatedAt')
-@Index({ columns: ['oauthSid'] })
 export class SessionTable {
   @PrimaryGeneratedColumn()
   id!: Generated<string>;
@@ -56,6 +54,6 @@ export class SessionTable {
   @Column({ type: 'timestamp with time zone', nullable: true })
   pinExpiresAt!: Timestamp | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, index: true })
   oauthSid!: string | null;
 }

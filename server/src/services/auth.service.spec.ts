@@ -217,6 +217,57 @@ describe(AuthService.name, () => {
     });
   });
 
+  describe('backchannelLogout', () => {
+    const dto = { logout_token: 'fake-jwt-token' };
+
+    it('should throw a Bad Request Exception if OAuth is not enabled', async () => {
+      await expect(sut.backchannelLogout(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(sut.backchannelLogout(dto)).rejects.toThrow(
+        'Received backchannel logout request but OAuth is not enabled',
+      );
+    });
+
+    it('should throw a Bad Request Exception if the logout token validation fails', async () => {
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.oauthEnabled);
+      mocks.oauth.validateLogoutToken.mockRejectedValue(new Error('Token validation failed'));
+
+      await expect(sut.backchannelLogout(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(sut.backchannelLogout(dto)).rejects.toThrow('Error backchannel logout: token validation failed');
+    });
+
+    it('should throw a Bad Request Exception if there are no claims in the logout token', async () => {
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.oauthEnabled);
+      mocks.oauth.validateLogoutToken.mockResolvedValue(null);
+
+      await expect(sut.backchannelLogout(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(sut.backchannelLogout(dto)).rejects.toThrow('Invalid logout token: no claims found');
+    });
+
+    it('should throw a Bad Request Exception if there is neither the sub nor the sid claim', async () => {
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.oauthEnabled);
+      mocks.oauth.validateLogoutToken.mockResolvedValue({ sub: '', sid: '' });
+
+      await expect(sut.backchannelLogout(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(sut.backchannelLogout(dto)).rejects.toThrow(
+        'Invalid logout token: it must contain either a sub or a sid claim',
+      );
+    });
+
+    it('should invalidate the OAuth session(s) if the logout token is valid', async () => {
+      const claims = { sub: 'fake-sub', sid: 'fake-sid' };
+
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.oauthEnabled);
+      mocks.oauth.validateLogoutToken.mockResolvedValue(claims);
+      mocks.session.invalidateOAuth.mockResolvedValue(void 0);
+
+      await sut.backchannelLogout(dto);
+      expect(mocks.session.invalidateOAuth).toHaveBeenCalledWith({
+        oauthSid: claims.sid,
+        oauthId: claims.sub,
+      });
+    });
+  });
+
   describe('adminSignUp', () => {
     const dto: SignUpDto = { email: 'test@immich.com', password: 'password', name: 'immich admin' };
 
@@ -1048,6 +1099,26 @@ describe(AuthService.name, () => {
       expect(mocks.user.update).toHaveBeenCalledWith(auth.user.id, { oauthId: sub });
     });
 
+    it('should link an account and update the session with the oauthSid', async () => {
+      const user = factory.userAdmin();
+      const session = factory.session();
+      const auth = factory.auth({ session });
+
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.enabled);
+      mocks.oauth.getProfileAndOAuthSid.mockResolvedValue({ profile: { sub }, sid: session.oauthSid });
+      mocks.user.update.mockResolvedValue(user);
+      mocks.session.update.mockResolvedValue(session);
+
+      await sut.link(
+        auth,
+        { url: 'http://immich/user-settings?code=abc123', state: 'xyz789', codeVerifier: 'foo' },
+        {},
+      );
+
+      expect(mocks.session.update).toHaveBeenCalledWith(session.id, { oauthSid: session.oauthSid });
+      expect(mocks.user.update).toHaveBeenCalledWith(auth.user.id, { oauthId: sub });
+    });
+
     it('should not link an already linked oauth.sub', async () => {
       const authUser = factory.authUser();
       const authApiKey = factory.authApiKey({ permissions: [] });
@@ -1074,6 +1145,21 @@ describe(AuthService.name, () => {
 
       await sut.unlink(auth);
 
+      expect(mocks.user.update).toHaveBeenCalledWith(auth.user.id, { oauthId: '' });
+    });
+
+    it('should unlink an account and remove the oauthSid from the session', async () => {
+      const user = factory.userAdmin();
+      const session = factory.session();
+      const auth = factory.auth({ session });
+
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.enabled);
+      mocks.session.update.mockResolvedValue(session);
+      mocks.user.update.mockResolvedValue(user);
+
+      await sut.unlink(auth);
+
+      expect(mocks.session.update).toHaveBeenCalledWith(session.id, { oauthSid: null });
       expect(mocks.user.update).toHaveBeenCalledWith(auth.user.id, { oauthId: '' });
     });
   });
