@@ -1,4 +1,4 @@
-import { OAuthClient, OAuthUser } from '@immich/e2e-auth-server';
+import { OAuthClient, OAuthUser, generateLogoutToken } from '@immich/e2e-auth-server';
 import {
   LoginResponseDto,
   SystemConfigOAuthDto,
@@ -330,6 +330,42 @@ describe(`/oauth`, () => {
           userEmail: 'oauth-user3@immich.app',
         });
       });
+    });
+  });
+
+  describe(`POST /oauth/backchannel-logout`, () => {
+    it(`should throw an error if the logout_token is not provided`, async () => {
+      const { status, body } = await request(app).post('/oauth/backchannel-logout').send({});
+      expect(status).toBe(400);
+      expect(body).toEqual(errorDto.badRequest(['logout_token must be a string', 'logout_token should not be empty']));
+    });
+
+    it(`should throw an error if an invalid logout token is provided`, async () => {
+      const { status, body } = await request(app)
+        .post('/oauth/backchannel-logout')
+        .send({ logout_token: 'invalid token' });
+      expect(status).toBe(400);
+      expect(body).toEqual(errorDto.badRequest('Error backchannel logout: token validation failed'));
+    });
+
+    it(`should work if a valid logout token is provided`, async () => {
+      await setupOAuth(admin.accessToken, {
+        enabled: true,
+        clientId: OAuthClient.DEFAULT,
+        clientSecret: OAuthClient.DEFAULT,
+        autoRegister: false,
+        signingAlgorithm: 'RS256',
+        buttonText: 'Login with Immich',
+      });
+
+      const logoutToken = await generateLogoutToken(
+        `${authServer.internal}/.well-known/openid-configuration`,
+        OAuthUser.WITH_USERNAME,
+      );
+
+      const { status, body } = await request(app).post('/oauth/backchannel-logout').send({ logout_token: logoutToken });
+      expect(status).toBe(200);
+      expect(body).toMatchObject({});
     });
   });
 
