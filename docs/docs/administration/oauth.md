@@ -51,7 +51,7 @@ Before enabling OAuth in Immich, a new client application needs to be configured
 
 3. Configure Backchannel logout URL
 
-   If the authentication server supports is, the **Backchannel logout URL** can be specified, and it is of the form: `http://DOMAIN:PORT/api/oauth/backchannel-logout`.
+   If the authentication server supports it, the **Backchannel logout URL** can be specified, and it is of the form: `http://DOMAIN:PORT/api/oauth/backchannel-logout`.
 
 ## Enable OAuth
 
