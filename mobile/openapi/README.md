@@ -474,7 +474,6 @@ Class | Method | HTTP request | Description
  - [NotificationUpdateAllDto](doc//NotificationUpdateAllDto.md)
  - [NotificationUpdateDto](doc//NotificationUpdateDto.md)
  - [OAuthAuthorizeResponseDto](doc//OAuthAuthorizeResponseDto.md)
- - [OAuthBackchannelLogoutDto](doc//OAuthBackchannelLogoutDto.md)
  - [OAuthCallbackDto](doc//OAuthCallbackDto.md)
  - [OAuthConfigDto](doc//OAuthConfigDto.md)
  - [OAuthTokenEndpointAuthMethod](doc//OAuthTokenEndpointAuthMethod.md)

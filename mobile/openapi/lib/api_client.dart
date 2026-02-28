@@ -470,8 +470,6 @@ class ApiClient {
           return NotificationUpdateDto.fromJson(value);
         case 'OAuthAuthorizeResponseDto':
           return OAuthAuthorizeResponseDto.fromJson(value);
-        case 'OAuthBackchannelLogoutDto':
-          return OAuthBackchannelLogoutDto.fromJson(value);
         case 'OAuthCallbackDto':
           return OAuthCallbackDto.fromJson(value);
         case 'OAuthConfigDto':

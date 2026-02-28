@@ -432,20 +432,24 @@ class AuthenticationApi {
   ///
   /// Parameters:
   ///
-  /// * [OAuthBackchannelLogoutDto] oAuthBackchannelLogoutDto (required):
-  Future<Response> logoutOAuthWithHttpInfo(OAuthBackchannelLogoutDto oAuthBackchannelLogoutDto,) async {
+  /// * [String] logoutToken (required):
+  ///   OAuth logout token
+  Future<Response> logoutOAuthWithHttpInfo(String logoutToken,) async {
     // ignore: prefer_const_declarations
     final apiPath = r'/oauth/backchannel-logout';
 
     // ignore: prefer_final_locals
-    Object? postBody = oAuthBackchannelLogoutDto;
+    Object? postBody;
 
     final queryParams = <QueryParam>[];
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-    const contentTypes = <String>['application/json'];
+    const contentTypes = <String>['application/x-www-form-urlencoded'];
 
+    if (logoutToken != null) {
+      formParams[r'logout_token'] = parameterToString(logoutToken);
+    }
 
     return apiClient.invokeAPI(
       apiPath,
@@ -464,9 +468,10 @@ class AuthenticationApi {
   ///
   /// Parameters:
   ///
-  /// * [OAuthBackchannelLogoutDto] oAuthBackchannelLogoutDto (required):
-  Future<void> logoutOAuth(OAuthBackchannelLogoutDto oAuthBackchannelLogoutDto,) async {
-    final response = await logoutOAuthWithHttpInfo(oAuthBackchannelLogoutDto,);
+  /// * [String] logoutToken (required):
+  ///   OAuth logout token
+  Future<void> logoutOAuth(String logoutToken,) async {
+    final response = await logoutOAuthWithHttpInfo(logoutToken,);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

@@ -255,16 +255,23 @@ describe(AuthService.name, () => {
 
     it('should invalidate the OAuth session(s) if the logout token is valid', async () => {
       const claims = { sub: 'fake-sub', sid: 'fake-sid' };
+      const deletedSessionIds: string[] = ['fake-session-1', 'fake-session-2'];
 
       mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.oauthEnabled);
       mocks.oauth.validateLogoutToken.mockResolvedValue(claims);
-      mocks.session.invalidateOAuth.mockResolvedValue(void 0);
+      mocks.session.invalidateOAuth.mockResolvedValue(deletedSessionIds);
+      mocks.event.emit.mockResolvedValue(void 0);
+      mocks.event.emit.mockResolvedValue(void 0);
 
       await sut.backchannelLogout(dto);
+
       expect(mocks.session.invalidateOAuth).toHaveBeenCalledWith({
         oauthSid: claims.sid,
         oauthId: claims.sub,
       });
+
+      expect(mocks.event.emit).toHaveBeenCalledWith('SessionDelete', { sessionId: 'fake-session-1' });
+      expect(mocks.event.emit).toHaveBeenCalledWith('SessionDelete', { sessionId: 'fake-session-2' });
     });
   });
 

@@ -117,7 +117,14 @@ export class AuthService extends BaseService {
       throw new BadRequestException('Invalid logout token: it must contain either a sub or a sid claim');
     }
 
-    await this.sessionRepository.invalidateOAuth({ oauthSid: claims.sid, oauthId: claims.sub });
+    const deletedSessionIds = await this.sessionRepository.invalidateOAuth({
+      oauthSid: claims.sid,
+      oauthId: claims.sub,
+    });
+
+    for (const sessionId of deletedSessionIds) {
+      await this.eventRepository.emit('SessionDelete', { sessionId });
+    }
   }
 
   async changePassword(auth: AuthDto, dto: ChangePasswordDto): Promise<UserAdminResponseDto> {

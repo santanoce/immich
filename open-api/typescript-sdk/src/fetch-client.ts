@@ -5000,7 +5000,7 @@ export function startOAuth({ oAuthConfigDto }: {
 export function logoutOAuth({ oAuthBackchannelLogoutDto }: {
     oAuthBackchannelLogoutDto: OAuthBackchannelLogoutDto;
 }, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText("/oauth/backchannel-logout", oazapfts.json({
+    return oazapfts.ok(oazapfts.fetchText("/oauth/backchannel-logout", oazapfts.form({
         ...opts,
         method: "POST",
         body: oAuthBackchannelLogoutDto

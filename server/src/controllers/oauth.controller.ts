@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Redirect, Req, Res } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Endpoint, HistoryBuilder } from 'src/decorators';
 import {
@@ -116,6 +116,7 @@ export class OAuthController {
 
   @Post('backchannel-logout')
   @HttpCode(HttpStatus.OK)
+  @ApiConsumes('application/x-www-form-urlencoded')
   @Endpoint({
     summary: 'Backchannel OAuth logout',
     description:

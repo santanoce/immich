@@ -4,6 +4,7 @@ import {
   SystemConfigOAuthDto,
   getConfigDefaults,
   getMyUser,
+  getSessions,
   startOAuth,
   updateConfig,
 } from '@immich/sdk';
@@ -348,24 +349,32 @@ describe(`/oauth`, () => {
       expect(body).toEqual(errorDto.badRequest('Error backchannel logout: token validation failed'));
     });
 
-    it(`should work if a valid logout token is provided`, async () => {
+    it(`should logout user if a valid logout token is provided`, async () => {
       await setupOAuth(admin.accessToken, {
         enabled: true,
         clientId: OAuthClient.DEFAULT,
         clientSecret: OAuthClient.DEFAULT,
-        autoRegister: false,
+        autoRegister: true,
         signingAlgorithm: 'RS256',
         buttonText: 'Login with Immich',
       });
 
-      const logoutToken = await generateLogoutToken(
-        `${authServer.internal}/.well-known/openid-configuration`,
-        OAuthUser.WITH_USERNAME,
-      );
+      const callbackParams = await loginWithOAuth('backchannel-logout-user');
+      const { status: callbackStatus, body: callbackBody } = await request(app)
+        .post('/oauth/callback')
+        .send(callbackParams);
+      expect(callbackStatus).toBe(201);
 
+      await expect(getSessions({ headers: asBearerAuth(callbackBody.accessToken) })).resolves.toHaveLength(1);
+
+      const logoutToken = await generateLogoutToken('http://0.0.0.0:2286', 'backchannel-logout-user');
       const { status, body } = await request(app).post('/oauth/backchannel-logout').send({ logout_token: logoutToken });
       expect(status).toBe(200);
       expect(body).toMatchObject({});
+
+      await expect(getSessions({ headers: asBearerAuth(callbackBody.accessToken) })).rejects.toMatchObject({
+        status: 401,
+      });
     });
   });
 

@@ -135,9 +135,11 @@ export class OAuthRepository {
       }
 
       const { payload } = await jwtVerify(logoutToken, keyOrGetter as any, {
-        issuer: config.issuerUrl,
+        issuer: client.serverMetadata().issuer,
         audience: config.clientId,
         algorithms: [algorithm],
+        maxTokenAge: '2m',
+        clockTolerance: '5s',
       });
 
       // Validate specific Logout Token claims (RFC 8963):
